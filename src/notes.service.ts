@@ -1,6 +1,7 @@
-// notes.service.ts
 import { Injectable } from '@nestjs/common';
 import { createNoteSchema, editNoteSchema } from './note.schema';
+import { Note } from './note';
+import { pick } from 'lodash';
 
 @Injectable()
 export class NotesService {
@@ -63,39 +64,34 @@ export class NotesService {
     },
   ];
 
-  getAllNotes(): any[] {
+  getAllNotes(): Note[] {
     return this.notes;
   }
 
-  getNoteById(id: number): any {
+  getNoteById(id: number): Note | undefined {
     return this.notes.find((note) => note.id === id);
   }
 
-  createNote(note: any): any {
-    // Validate the note using createNoteSchema before adding
-    createNoteSchema.validateSync(note, { abortEarly: false });
-    const newNote: any = {
-      ...note,
+  createNote(note: Omit<Note, 'id'>): Note {
+    const validatedNote: Note = createNoteSchema.validateSync(pick(note, Object.keys(createNoteSchema.fields)), { abortEarly: false });
+    const newNote: Note = {
+      ...validatedNote,
       id: this.getNextId(),
     };
     this.notes.push(newNote);
     return newNote;
   }
 
-  editNote(id: number, updatedNote: any): any {
+  editNote(id: number, updatedNote: Note): Note {
     const index = this.notes.findIndex((note) => note.id === id);
     if (index === -1) {
       throw new Error('Note not found');
     }
 
-    const existingNote: any = this.notes[index];
-    // Merge the existing note with the updated fields before validation
-    const mergedNote: any = { ...existingNote, ...updatedNote };
-    // Validate the mergedNote using editNoteSchema before updating
-    editNoteSchema.validateSync(mergedNote, { abortEarly: false });
-
-    // Update the fields of the existing note based on the mergedNote
-    this.notes[index] = { ...existingNote, ...mergedNote };
+    const existingNote: Note = this.notes[index];
+    const mergedNote: Note = { ...existingNote, ...updatedNote };
+    const validatedNote: Note = editNoteSchema.validateSync(pick(mergedNote, Object.keys(editNoteSchema.fields)), { abortEarly: false });
+    this.notes[index] = { ...existingNote, ...validatedNote };
     return this.notes[index];
   }
 

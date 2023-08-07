@@ -2,6 +2,7 @@
 import * as yup from 'yup';
 
 export const createNoteSchema = yup.object({
+  id: yup.number().optional(),
   name: yup.string().required(),
   date: yup.string().required().matches(/\d{4}-\d{2}-\d{2}/, 'Invalid date format'),
   category: yup.string().required(),
